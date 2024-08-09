@@ -14,6 +14,12 @@ class ReserveBerechnung:
         for i in range(1, len(px)):
             lx.append(lx[i - 1] * px[i - 1])
         barwertfaktor = 0
+        print(f"Länge von adjusted_qx: {len(adjusted_qx)}")
+        print(f"Länge von px: {len(px)}")
+        print(f"Länge von lx: {len(lx)}")
+
+        n= int(n)
+        alter = int(alter)
         for k in range(1, n+1): 
             barwertfaktor += (v ** k )* (lx[alter + k ] / lx[alter])
         barwert = rente * barwertfaktor
@@ -60,13 +66,19 @@ death_table_df = pd.read_excel(file_path, sheet_name="Death Table", header=3)
 #print(death_table_df.columns)
 
 reserve_berechnung = ReserveBerechnung(death_table=death_table_df)
-# Beispielwerte
-rente = 1200
-zins = 0.0025
-n = 80  # Laufzeit der Rente (z.B. von 40 bis 80 Jahren)
-uebersterblichkeit = 1.0
-alter = 40
+
+for index, row in bestand_df.iterrows():
+    alter = row["Age"]
+    rente = row["Rente"]
+    zins = row.get("Zins", 0.0025)  # Verwende den Zinssatz aus der Tabelle oder den Standardwert
+    uebersterblichkeit = row.get("Übersterblichkeit", 1.0)  # Verwende den Übersterblichkeitsfaktor oder den Standardwert
+   # zahlungsweise = row.get("Zahlungsweise", "jährlich")  # Verwende die Zahlungsweise oder den Standardwert
+    n = row.get("Laufzeit", 80)  # Verwende die Laufzeit oder den Standardwert
 
 # Berechnung der Reserve
 barwert = reserve_berechnung.berechne_reserve_jährlich(alter, rente, uebersterblichkeit, zins, n)
+bestand_df.at[index, 'Reserve'] = barwert
+bestand_df.to_excel(file_path, sheet_name="Tabelle2", index=False)
+print(bestand_df.head())
+
 print(f"Der Barwert der Rente beträgt: {barwert:.2f}")
