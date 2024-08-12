@@ -29,7 +29,7 @@ class ReserveBerechnung:
 
 # Excel-Datei einlesen
 file_path = '/Users/alicetangyie/Downloads/Uni/BachelorArbeit/GI_annuities_data_template.v10_GE_2024_Q1.xlsx'  # Muss vom Anwender angepasst werden
-bestand_df = pd.read_excel(file_path, sheet_name="Tabelle2", header=0)
+bestand_df = pd.read_excel(file_path, sheet_name="Inputs - MPs", header=5)
 death_table_df = pd.read_excel(file_path, sheet_name="Death Table", header=3)
 
 # Benutzer nach dem Zinssatz fragen
@@ -42,10 +42,10 @@ zins = float(input("Bitte geben Sie den Zinssatz ein (z.B. 0.0025 für 0.25%): "
 reserve_berechnung = ReserveBerechnung(death_table=death_table_df)
 
 for index, row in bestand_df.iterrows():
-    alter = row["Age"]
-    rente = row["Rente"]
-    uebersterblichkeit = row.get("Übersterblichkeit", 1.0)  # Verwende den Übersterblichkeitsfaktor oder den Standardwert
-    n = row["Laufzeit"]  # Verwende die Laufzeit aus der Tabelle
+    alter = row["AGE_AT_ENTRY"]
+    rente = row["ANN_ANNUITY"]
+    uebersterblichkeit = row.get("Q_CORR_PN", 1.0)  # Verwende den Übersterblichkeitsfaktor oder den Standardwert
+    n = row["POL_TERM_Y"]  # Verwende die Laufzeit aus der Tabelle
 
     # Debug-Ausgabe der Eingabewerte
     print(f"Zeile {index}: Alter={alter}, Rente={rente}, Zins={zins}, Übersterblichkeit={uebersterblichkeit}, Laufzeit={n}")
