@@ -32,6 +32,9 @@ file_path = '/Users/alicetangyie/Downloads/Uni/BachelorArbeit/GI_annuities_data_
 bestand_df = pd.read_excel(file_path, sheet_name="Tabelle2", header=0)
 death_table_df = pd.read_excel(file_path, sheet_name="Death Table", header=3)
 
+# Benutzer nach dem Zinssatz fragen
+zins = float(input("Bitte geben Sie den Zinssatz ein (z.B. 0.0025 für 0.25%): "))
+
 # Überblick über die Spalten
 #print(bestand_df.columns)
 #print(death_table_df.columns)
@@ -41,7 +44,6 @@ reserve_berechnung = ReserveBerechnung(death_table=death_table_df)
 for index, row in bestand_df.iterrows():
     alter = row["Age"]
     rente = row["Rente"]
-    zins = row.get("Zins", 0.0025)  # Verwende den Zinssatz aus der Tabelle oder den Standardwert
     uebersterblichkeit = row.get("Übersterblichkeit", 1.0)  # Verwende den Übersterblichkeitsfaktor oder den Standardwert
     n = row["Laufzeit"]  # Verwende die Laufzeit aus der Tabelle
 
