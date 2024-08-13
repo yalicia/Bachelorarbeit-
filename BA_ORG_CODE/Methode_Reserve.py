@@ -4,7 +4,7 @@ class ReserveBerechnung:
     def __init__(self, death_table):
         self.death_table = death_table
             
-    def berechne_reserve_jährlich(self, alter, rente, uebersterblichkeit, zins, n, sex):
+    def berechne_reserve_jährlich(self, alter, rente, uebersterblichkeit, zins, n, sex,escRate):
         v = 1 / (1 + zins)  # Abzinsfaktor
 
         if sex == 0:  #  "0" for male gender
@@ -24,11 +24,13 @@ class ReserveBerechnung:
 
         if alter + n >= len(lx):
             raise IndexError("Der Wert von alter + n überschreitet die Länge von lx.")
-
+        if escRate == "YES":
+            rente = rente * (1 +  Rate)
+        
         barwertfaktor = 0
         n = int(n)
         alter = int(alter)
-        #sex= int(sex)
+       
         
         for k in range(1, n + 1):
             barwertfaktor += (v ** k) * (lx[alter + k] / lx[alter])
@@ -43,7 +45,7 @@ death_table_df = pd.read_excel(file_path, sheet_name="Death Table", header=3)
 
 # Benutzer nach dem Zinssatz fragen
 zins = float(input("Bitte geben Sie den Zinssatz ein (z.B. 0.0025 für 0.25%): "))
-
+Rate = float(input("Bitte geben Sie den esc Rate ein (z.B. 0.009 für 0.9%)"))
 # Überblick über die Spalten
 #print(bestand_df.columns)
 #print(death_table_df.columns)
@@ -56,12 +58,13 @@ for index, row in bestand_df.iterrows():
     uebersterblichkeit = row.get("Q_CORR_PN", 1.0)  # Verwende den Übersterblichkeitsfaktor oder den Standardwert
     n = row["POL_TERM_Y"]  # Verwende die Laufzeit aus der Tabelle
     sex = row["SEX"]
+    escRate = row["ESC_RATE"] 
     
     # Debug-Ausgabe der Eingabewerte
-    print(f"Zeile {index}: Alter={alter}, Rente={rente}, Zins={zins}, Übersterblichkeit={uebersterblichkeit}, Laufzeit={n}, Geschlecht={sex}")
+    print(f"Zeile {index}: Alter={alter}, Rente={rente}, Zins={zins}, Übersterblichkeit={uebersterblichkeit}, Laufzeit={n}, Geschlecht={sex}, escRate={escRate}")
 
     # Berechnung der Reserve
-    barwert = reserve_berechnung.berechne_reserve_jährlich(alter, rente, uebersterblichkeit, zins, n, sex)
+    barwert = reserve_berechnung.berechne_reserve_jährlich(alter, rente, uebersterblichkeit, zins, n, sex, escRate)
     bestand_df.at[index, 'Reserve'] = barwert
 
 # Speichern der Ergebnisse in einer neuen Excel-Datei
