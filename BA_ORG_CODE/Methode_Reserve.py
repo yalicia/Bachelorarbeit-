@@ -4,15 +4,23 @@ class ReserveBerechnung:
     def __init__(self, death_table):
         self.death_table = death_table
             
-    def berechne_reserve_jährlich(self, alter, rente, uebersterblichkeit, zins, n):
-        # v = Abzinsfaktor
-        v = 1 / (1 + zins)
-        adjusted_qx = self.death_table["q x+0"] * uebersterblichkeit  # Wegen Übersterblichkeit
-        px = [1 - qx for qx in adjusted_qx]
-        lx = [1000000]  # Startwert für lx
+    def berechne_reserve_jährlich(self, alter, rente, uebersterblichkeit, zins, n, sex):
+        v = 1 / (1 + zins)  # Abzinsfaktor
 
-        for i in range(1, len(px)):
-            lx.append(lx[i - 1] * px[i - 1])
+        if sex == 0:  #  "0" for male gender
+            adjusted_qx = self.death_table["q x+0"] * uebersterblichkeit  # Übersterblichkeit berücksichtigen
+            px = [1 - qx for qx in adjusted_qx]
+            lx = [1000000]  # Startwert für lx
+            for i in range(1, len(px)):
+                lx.append(lx[i - 1] * px[i - 1])
+        elif sex == 1:  #  "1" for female gender
+            adjusted_qy = self.death_table["q y+0"] * uebersterblichkeit  # Übersterblichkeit berücksichtigen
+            py = [1 - qy for qy in adjusted_qy]
+            lx = [1000000]  # Startwert für lx (using lx to keep consistency)
+            for i in range(1, len(py)):
+                lx.append(lx[i - 1] * py[i - 1])
+        else:
+            return "Ungültige Geschlechtseingabe"
 
         if alter + n >= len(lx):
             raise IndexError("Der Wert von alter + n überschreitet die Länge von lx.")
@@ -20,6 +28,7 @@ class ReserveBerechnung:
         barwertfaktor = 0
         n = int(n)
         alter = int(alter)
+        #sex= int(sex)
         
         for k in range(1, n + 1):
             barwertfaktor += (v ** k) * (lx[alter + k] / lx[alter])
@@ -46,12 +55,13 @@ for index, row in bestand_df.iterrows():
     rente = row["ANN_ANNUITY"]
     uebersterblichkeit = row.get("Q_CORR_PN", 1.0)  # Verwende den Übersterblichkeitsfaktor oder den Standardwert
     n = row["POL_TERM_Y"]  # Verwende die Laufzeit aus der Tabelle
-
+    sex = row["SEX"]
+    
     # Debug-Ausgabe der Eingabewerte
-    print(f"Zeile {index}: Alter={alter}, Rente={rente}, Zins={zins}, Übersterblichkeit={uebersterblichkeit}, Laufzeit={n}")
+    print(f"Zeile {index}: Alter={alter}, Rente={rente}, Zins={zins}, Übersterblichkeit={uebersterblichkeit}, Laufzeit={n}, Geschlecht={sex}")
 
     # Berechnung der Reserve
-    barwert = reserve_berechnung.berechne_reserve_jährlich(alter, rente, uebersterblichkeit, zins, n)
+    barwert = reserve_berechnung.berechne_reserve_jährlich(alter, rente, uebersterblichkeit, zins, n, sex)
     bestand_df.at[index, 'Reserve'] = barwert
 
 # Speichern der Ergebnisse in einer neuen Excel-Datei
