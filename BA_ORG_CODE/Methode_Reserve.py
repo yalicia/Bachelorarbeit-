@@ -4,7 +4,7 @@ class ReserveBerechnung:
     def __init__(self, death_table):
         self.death_table = death_table
             
-    def berechne_reserve_jährlich(self, alter, rente, uebersterblichkeit, zins, n, sex,escRate):
+    def berechne_reserve(self, alter, rente, uebersterblichkeit, zins, n, sex, escRate,freq):
         v = 1 / (1 + zins)  # Abzinsfaktor
 
         if sex == 0:  #  "0" for male gender
@@ -28,13 +28,17 @@ class ReserveBerechnung:
             rente = rente * (1 +  Rate)
         
         barwertfaktor = 0
+        barwertfaktornormal = 0
         n = int(n)
         alter = int(alter)
        
         
         for k in range(1, n + 1):
-            barwertfaktor += (v ** k) * (lx[alter + k] / lx[alter])
-        
+            if freq == 1:
+                barwertfaktor += (v ** k) * (lx[alter + k] / lx[alter])
+            else :
+                barwertfaktornormal += (v ** k) * (lx[alter + k] / lx[alter])
+                barwertfaktor = barwertfaktornormal - ((((lx[alter+n] * (v ** (alter+n))))/(lx[alter] * (v ** alter))-1)* ((freq-1)/2*freq))
         barwert = rente * barwertfaktor
         return barwert
 
@@ -59,12 +63,13 @@ for index, row in bestand_df.iterrows():
     n = row["POL_TERM_Y"]  # Verwende die Laufzeit aus der Tabelle
     sex = row["SEX"]
     escRate = row["ESC_RATE"] 
+    freq = row["ANNUITY_FREQ"]
     
     # Debug-Ausgabe der Eingabewerte
     print(f"Zeile {index}: Alter={alter}, Rente={rente}, Zins={zins}, Übersterblichkeit={uebersterblichkeit}, Laufzeit={n}, Geschlecht={sex}, escRate={escRate}")
 
     # Berechnung der Reserve
-    barwert = reserve_berechnung.berechne_reserve_jährlich(alter, rente, uebersterblichkeit, zins, n, sex, escRate)
+    barwert = reserve_berechnung.berechne_reserve(alter, rente, uebersterblichkeit, zins, n, sex, escRate,freq)
     bestand_df.at[index, 'Reserve'] = barwert
 
 # Speichern der Ergebnisse in einer neuen Excel-Datei
