@@ -49,7 +49,7 @@ death_table_df = pd.read_excel(file_path, sheet_name="Death Table", header=3)
 
 # Benutzer nach dem Zinssatz fragen
 zins = float(input("Bitte geben Sie den Zinssatz ein (z.B. 0.0025 für 0.25%): "))
-Rate = float(input("Bitte geben Sie den esc Rate ein (z.B. 0.009 für 0.9%)"))
+Rate = float(input("Bitte geben Sie den esc Rate ein (z.B. 0.009 für 0.9%): "))
 # Überblick über die Spalten
 #print(bestand_df.columns)
 #print(death_table_df.columns)
@@ -78,3 +78,4 @@ bestand_df.to_excel(new_file_path, sheet_name="Tabelle2", index=False)
 
 print(f"Die Ergebnisse wurden in die neue Datei gespeichert: {new_file_path}")
 print(bestand_df.head())
+
