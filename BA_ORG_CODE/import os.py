@@ -29,7 +29,7 @@ class ReserveBerechnung:
     def __init__(self, death_table):
         self.death_table = death_table
     def berechne_reserve(self, alter, rente, uebersterblichkeit, zins, n, sex, escRate,freq,geburtsjahr):
-         
+    
         v = 1 / (1 + (zins/100)) # Abzinsfaktor
  
         if sex == 0: # "0" for male gender
@@ -70,27 +70,50 @@ class ReserveBerechnung:
         #print(f"Die Ergebnii gespeit: {len(lx)}")
         if escRate == "YES":
             rente = rente * (1 + (Rate/100))
-        barwertfaktor = 0
-        barwertfaktornormal = 0
-        n = int(n)
-        t_alter = int(t_alter)
-        for k in range(1, n + 1):
-            if t_alter + k >= len(lx):
-                print(f"Error: Attempting to access lx[{t_alter + k}] but len(lx)={len(lx)}")
-                raise IndexError("Index out of bounds while accessing lx.")
-            if freq == 1:
-                barwertfaktor += (v ** k) * (lx[t_alter + k] / lx[t_alter])
-               
-            else :
-                barwertfaktornormal += (v ** k) * (lx[t_alter + k] / lx[t_alter])
-                #barwertfaktor = barwertfaktornormal - ((((lx[t_alter+n] * (v ** (t_alter+n))))/(lx[t_alter] * (v ** t_alter))-1)* ((freq-1)/2*freq))
-        if freq != 1:
-            correction_term = ((((lx[t_alter + n] * (v ** (t_alter + n)))) / (lx[t_alter] * (v ** t_alter))) - 1) * ((freq - 1) / (2 * freq))
-            barwertfaktor = barwertfaktornormal - correction_term
-         
-        barwert = rente * barwertfaktor
-       
-        return barwert
+        if art == "Nachschüssig":
+            barwertfaktor = 0
+            barwertfaktornormal = 0
+            n = int(n)
+            t_alter = int(t_alter)
+            for k in range(1, n + 1):
+                if t_alter + k >= len(lx):
+                    print(f"Error: Attempting to access lx[{t_alter + k}] but len(lx)={len(lx)}")
+                    raise IndexError("Index out of bounds while accessing lx.")
+                if freq == 1:
+                    barwertfaktor += (v ** k) * (lx[t_alter + k] / lx[t_alter])
+                
+                else :
+                    barwertfaktornormal += (v ** k) * (lx[t_alter + k] / lx[t_alter])
+                    #barwertfaktor = barwertfaktornormal - ((((lx[t_alter+n] * (v ** (t_alter+n))))/(lx[t_alter] * (v ** t_alter))-1)* ((freq-1)/2*freq))
+            if freq != 1:
+                correction_term = ((((lx[t_alter + n] * (v ** (t_alter + n)))) / (lx[t_alter] * (v ** t_alter))) - 1) * ((freq - 1) / (2 * freq))
+                barwertfaktor = barwertfaktornormal - correction_term
+            
+            barwert = rente * barwertfaktor
+        
+            return barwert
+        elif art == "Vorschüssig":
+            barwertfaktor = 0
+            barwertfaktornormal = 0
+            n = int(n)
+            t_alter = int(t_alter)
+            for k in range(0, n ):
+                if t_alter + k >= len(lx):
+                    print(f"Error: Attempting to access lx[{t_alter + k}] but len(lx)={len(lx)}")
+                    raise IndexError("Index out of bounds while accessing lx.")
+                if freq == 1:
+                    barwertfaktor += (v ** k) * (lx[t_alter + k] / lx[t_alter])
+                
+                else :
+                    barwertfaktornormal += (v ** k) * (lx[t_alter + k] / lx[t_alter])
+                    #barwertfaktor = barwertfaktornormal - ((((lx[t_alter+n] * (v ** (t_alter+n))))/(lx[t_alter] * (v ** t_alter))-1)* ((freq-1)/2*freq))
+            if freq != 1:
+                correction_term = ((((lx[t_alter + n] * (v ** (t_alter + n)))) / (lx[t_alter] * (v ** t_alter))) - 1) * ((freq - 1) / (2 * freq))
+                barwertfaktor = barwertfaktornormal + correction_term
+            
+            barwert = rente * barwertfaktor
+        
+            return barwert
     def compare_reserves(self, directory, base_name='GI_annuities_data_template_with_reserves'):
         file_extension = '.xlsx'
         reserve_sums = {}
@@ -103,7 +126,7 @@ class ReserveBerechnung:
                 df = pd.read_excel(file_path, sheet_name="Tabelle2")
                
          
-                reserve_sum = df['Reserve'].sum()
+                reserve_sum = df['Reserve'].iloc[-1]
              
                 reserve_sums[filename] = reserve_sum
        
@@ -157,7 +180,7 @@ variables_df = pd.read_excel(file_path, sheet_name="Variables", header=None)
 zins = variables_df.at[0, 1]  # Liest den Wert in Zelle B1  (Zins) zeile-spalte leseweise
 Rate = variables_df.at[1, 1]  # Liest den Wert in Zelle B2 (EscRate)
 berechnungsjahr = variables_df.at[2, 1]# Liest den Wert in Zelle B3
- 
+art = variables_df.at[3, 1]
 reserve_berechnung = ReserveBerechnung(death_table=death_table_df)
  
 required_columns = ['AGE_AT_ENTRY', 'ANN_ANNUITY', 'POL_TERM_Y', 'SEX', 'ESC_RATE', 'ANNUITY_FREQ', 'ENTRY_YEAR',"Q_CORR_PN"]
