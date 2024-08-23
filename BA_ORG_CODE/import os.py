@@ -1,6 +1,7 @@
 import os
 import logging
 import pandas as pd
+import math
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 from openpyxl.styles import Font
@@ -89,7 +90,7 @@ class ReserveBerechnung:
                 correction_term = ((((lx[t_alter + n] * (v ** (t_alter + n)))) / (lx[t_alter] * (v ** t_alter))) - 1) * ((freq - 1) / (2 * freq))
                 barwertfaktor = barwertfaktornormal - correction_term
             
-            barwert = rente * barwertfaktor
+            barwert = math.ceil(rente * barwertfaktor)
         
             return barwert
         elif art == "Vorschüssig":
@@ -111,7 +112,7 @@ class ReserveBerechnung:
                 correction_term = ((((lx[t_alter + n] * (v ** (t_alter + n)))) / (lx[t_alter] * (v ** t_alter))) - 1) * ((freq - 1) / (2 * freq))
                 barwertfaktor = barwertfaktornormal + correction_term
             
-            barwert = rente * barwertfaktor
+            barwert = math.ceil(rente * barwertfaktor)
         
             return barwert
     def compare_reserves(self, directory, base_name='GI_annuities_data_template_with_reserves'):
@@ -139,6 +140,7 @@ class ReserveBerechnung:
        
         comparison_df['Delta'] = comparison_df['Sum of Reserves'].diff()
         comparison_df['Percentage Change'] = comparison_df['Delta'] / comparison_df['Sum of Reserves'].shift(1) * 100
+        
  
 
         # Save the comparison to a new Excel file
