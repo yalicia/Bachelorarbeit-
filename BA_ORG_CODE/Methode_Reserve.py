@@ -21,6 +21,7 @@ class ReserveBerechnung:
                 lx.append(lx[i - 1] * py[i - 1])
         else:
             return "Ungültige Geschlechtseingabe"
+        geburtsjahr = [entry_year - alter]
 
         if alter + n >= len(lx):
             raise IndexError("Der Wert von alter + n überschreitet die Länge von lx.")
@@ -64,6 +65,7 @@ for index, row in bestand_df.iterrows():
     sex = row["SEX"]
     escRate = row["ESC_RATE"] 
     freq = row["ANNUITY_FREQ"]
+    entry_year = row["ENTRY_YEAR"]
     
     # Debug-Ausgabe der Eingabewerte
     print(f"Zeile {index}: Alter={alter}, Rente={rente}, Zins={zins}, Übersterblichkeit={uebersterblichkeit}, Laufzeit={n}, Geschlecht={sex}, escRate={escRate}")
