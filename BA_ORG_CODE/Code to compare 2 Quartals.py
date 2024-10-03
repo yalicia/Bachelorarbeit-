@@ -7,20 +7,45 @@ from openpyxl.styles import Font
  
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
- 
+
+# Klasse für die Reserveberechnung 
 class ReserveBerechnung:
     def __init__(self, death_table):
+        # Initialisiert die Klasse mit einer Sterbetabelle (death_table)
         self.death_table = death_table
+
+        """
+    berechne_reserve: Berechnet die Reserve für eine bestimmte Police.
+
+    Parameter:
+    - alter: Alter der versicherten Person
+    - rente: Rentenbetrag
+    - uebersterblichkeit: Anpassungsfaktor für die Sterblichkeit
+    - zins: Zinssatz in Prozent
+    - n: Laufzeit der Police in Jahren
+    - sex: Geschlecht (0 für männlich, 1 für weiblich)
+    - escRate: Eskalationsrate (Flag: 'YES' oder 'NO')
+    - freq: Häufigkeit der Rentenzahlung (Annuity frequency)
+    - geburtsjahr: Geburtsjahr der versicherten Person
+
+    Rückgabe:
+    - barwert: Berechneter Reservebetrag
+    """
  
     def berechne_reserve(self, alter, rente, uebersterblichkeit, zins, n, sex, escRate, freq, geburtsjahr):
-        v = 1 / (1 + (zins / 100))  # Abzinsfaktor
- 
-        if sex == 0:  # "0" for male gender
-            adjusted_qx = self.death_table["q x+0"] * uebersterblichkeit  # Übersterblichkeit berücksichtigen
-            px = [1 - qx for qx in adjusted_qx]
-            lx = [1000000]  # Startwert für lx
+        # Abzinsfaktor basierend auf dem Zinssatz
+        v = 1 / (1 + (zins / 100))  
+
+        # Geschlechtsspezifische Berechnung der Reserven
+        if sex == 0: # Für männliche versicherte Personen
+            # Anpassung der Sterbewahrscheinlichkeit anhand der Übersterblichkeit
+            adjusted_qx = self.death_table["q x+0"] * uebersterblichkeit  
+            px = [1 - qx for qx in adjusted_qx] # Wahrscheinlichkeit, zu überleben
+            lx = [1000000]  # Startwert für lx (Überlebenswahrscheinlichkeit für Hundert Tausend Versicherte)
             for i in range(1, len(px)):
-                lx.append(lx[i - 1] * px[i - 1])
+                lx.append(lx[i - 1] * px[i - 1]) # lx-Werte für jedes Jahr basierend auf px
+                
+                # Finden der altersbedingten Anpassung aus der Sterbetabelle
             birthyear_row = self.death_table[self.death_table['BIRTH_YEAR'] == geburtsjahr]
             if not birthyear_row.empty:
                 altersverschiebung = birthyear_row['AGE_ADJUSTMENT_M'].values[0]
@@ -28,12 +53,15 @@ class ReserveBerechnung:
                 t_alter = alterHeute + altersverschiebung
             else:
                 raise IndexError("Der Geburtsjahr für einen Mann wurde falsch gerechnet oder ist nicht zu finden.")
-        elif sex == 1:  # "1" for female gender
+            
+        elif sex == 1:  # Für weibliche versicherte Personen
             adjusted_qy = self.death_table["q y+0"] * uebersterblichkeit  # Übersterblichkeit berücksichtigen
-            py = [1 - qy for qy in adjusted_qy]
-            lx = [1000000]  # Startwert für lx (using lx to keep consistency)
+            py = [1 - qy for qy in adjusted_qy] # Wahrscheinlichkeit, zu überleben
+            lx = [1000000]  # Startwert für lx 
             for i in range(1, len(py)):
-                lx.append(lx[i - 1] * py[i - 1])
+                lx.append(lx[i - 1] * py[i - 1]) # lx-Werte für jedes Jahr basierend auf py
+
+            # Finden der altersbedingten Anpassung für Frauen
             birthyear_row = self.death_table[self.death_table['BIRTH_YEAR'] == geburtsjahr]
             if not birthyear_row.empty:
                 altersverschiebung = birthyear_row['AGE_ADJUSTMENT_F'].values[0]
@@ -43,16 +71,20 @@ class ReserveBerechnung:
                 raise IndexError("Der Geburtsjahr für eine Frau wurde falsch gerechnet oder ist nicht zu finden.")
         else:
             return "Ungültige Geschlechtseingabe"
- 
+
+        # Überprüfen, ob die Laufzeit korrekt berechnet wurde
         if n == 121:
             n = 121 - t_alter
- 
+
+        # Sicherstellen, dass der Wert von alter + n nicht die Länge von lx überschreitet
         if t_alter + n > len(lx):
             raise IndexError("Der Wert von alter + n überschreitet die Länge von lx.")
- 
+
+        # Eskalationsrate berücksichtigen, wenn sie aktiviert ist
         if escRate == "YES":
             rente = rente * (1 + (Rate / 100))
- 
+
+        # Berechnung der Reserve für nachschüssige Rentenzahlung
         if art == "Nachschüssig":
             barwertfaktor = 0
             barwertfaktornormal = 0
@@ -61,16 +93,21 @@ class ReserveBerechnung:
             for k in range(1, n + 1):
                 if t_alter + k >= len(lx):
                     raise IndexError("Index out of bounds while accessing lx.")
-                if freq == 1:
+                if freq == 1: # Einmal jährlich
                     barwertfaktor += (v ** k) * (lx[t_alter + k] / lx[t_alter])
                 else:
                     barwertfaktornormal += (v ** k) * (lx[t_alter + k] / lx[t_alter])
+            
+            # Korrekturterm, falls die Häufigkeit nicht jährlich ist
             if freq != 1:
                 correction_term = ((((lx[t_alter + n] * (v ** (t_alter + n)))) / (lx[t_alter] * (v ** t_alter))) - 1) * ((freq - 1) / (2 * freq))
                 barwertfaktor = barwertfaktornormal - correction_term
- 
+
+            # Berechnete Reserve (Barwert)
             barwert = rente * barwertfaktor
             return barwert
+        
+        # Berechnung der Reserve für vorschüssige Rentenzahlung
         elif art == "Vorschüssig":
             barwertfaktor = 0
             barwertfaktornormal = 0
@@ -90,11 +127,13 @@ class ReserveBerechnung:
             barwert = rente * barwertfaktor
             return barwert
  
+    # Vergleich der Reserven zwischen verschiedenen Dateien
     def compare_reserves(self, directory, base_name='GI_annuities_data_template_with_reserves'):
         file_extension = '.xlsx'
         reserve_sums = {}
         row_counts = {}
- 
+
+        # Iteriert über die Dateien im angegebenen Verzeichnis
         for filename in os.listdir(directory):
             if filename.startswith(base_name) and filename.endswith(file_extension):
                 file_path = os.path.join(directory, filename)
@@ -106,15 +145,20 @@ class ReserveBerechnung:
  
         comparison_df = pd.DataFrame(list(reserve_sums.items()), columns=['File', 'Sum of Reserves'])
         comparison_df.sort_values(by='File', inplace=True)
+
+        # Berechnet die Differenz (Delta) zwischen den Reserven und die prozentuale Änderung
         comparison_df['Delta'] = comparison_df['Sum of Reserves'].diff()
         comparison_df['Percentage Change'] = comparison_df['Delta'] / comparison_df['Sum of Reserves'].shift(1) * 100
         comparison_df['Number of Insured'] = comparison_df['File'].map(row_counts)
- 
+
+        
+        # Speichert die Ergebnisse in einer neuen Excel-Datei
         comparison_output_path = os.path.join(directory, 'reserves_comparison_with_deltas.xlsx')
         comparison_df.to_excel(comparison_output_path, index=False)
         print(f"Comparison of reserves with deltas saved to: {comparison_output_path}")
         return comparison_df
- 
+    
+    # Erstellt ein Diagramm zum Vergleich der Reserven
     def plot_reserve_comparison(self, comparison_df, output_directory):
         plt.figure(figsize=(10, 6))
         plt.plot(comparison_df['File'], comparison_df['Sum of Reserves'], marker='o')
@@ -140,23 +184,27 @@ file_paths = [
     '/Users/alicetangyie/Downloads/Uni/BachelorArbeit/GI_annuities_data_template.v10_GE_2024_Q3_modifiziert.xlsx'
 ]
  
+# Verarbeitung der Dateien
 for i, file_path in enumerate(file_paths, start=1):
     bestand_df = pd.read_excel(file_path, sheet_name="Inputs - MPs", header=5)
     death_table_df = pd.read_excel(file_path, sheet_name="Death Table", header=3)
     variables_df = pd.read_excel(file_path, sheet_name="Variables", header=None)
- 
+    
+     # Liest Variablen wie Zinssatz und Eskalationsrate aus der Datei
     zins = variables_df.at[0, 1]  # Liest den Wert in Zelle B1 (Zins)
     Rate = variables_df.at[1, 1]  # Liest den Wert in Zelle B2 (EscRate)
     berechnungsjahr = variables_df.at[2, 1]  # Liest den Wert in Zelle B3
     art = variables_df.at[3, 1]  # Liest den Wert in Zelle B4
  
     reserve_berechnung = ReserveBerechnung(death_table=death_table_df)
- 
+    
+    # Überprüft, ob alle erforderlichen Spalten vorhanden sind
     required_columns = ['AGE_AT_ENTRY', 'ANN_ANNUITY', 'POL_TERM_Y', 'SEX', 'ESC_RATE', 'ANNUITY_FREQ', 'ENTRY_YEAR', "Q_CORR_PN"]
     for col in required_columns:
         if col not in bestand_df.columns:
             raise ValueError(f"Missing required column: {col}")
- 
+    
+    # Berechnet die Reserve für jede Zeile
     for index, row in bestand_df.iterrows():
         alter = row["AGE_AT_ENTRY"]
         rente = row["ANN_ANNUITY"]
