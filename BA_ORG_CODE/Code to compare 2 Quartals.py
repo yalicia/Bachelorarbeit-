@@ -6,6 +6,7 @@ import matplotlib.ticker as ticker
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 
+#Konfigurationsbereich für Pfade
 base_directory = 'C:/Users/A.TANGYIELEMDONFACK/OneDrive - Zurich Insurance/Bachelorarbeit/CodeBA/'
 file_old = os.path.join(base_directory, "GI_annuities_data_template.v10_GE_2023_Q1_original.xlsx")
 file_new = os.path.join(base_directory, "GI_annuities_data_template.v10_GE_2024_Q1_original.xlsx")
@@ -13,6 +14,7 @@ file_paths = [
     os.path.join(base_directory, "GI_annuities_data_template.v10_GE_2023_Q1_original.xlsx"),
     os.path.join(base_directory, "GI_annuities_data_template.v10_GE_2024_Q1_original.xlsx")
 ]
+#ende des Konfigurationsbereich
 
 
 logging.basicConfig(level=logging.INFO)
